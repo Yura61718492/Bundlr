@@ -1,0 +1,130 @@
+update 'database', update distribution
+sudo apt-get update && sudo apt-get upgrade -y
+
+
+download the necessary dependencies with one command
+sudo apt-get install curl wget jq libpq-dev libssl-dev \
+build-essential pkg-config openssl ocl-icd-opencl-dev \
+libopencl-clang-dev libgomp1 -y
+
+
+install 'docker' and 'docker-compose' with one command
+. <(wget -qO- https://raw.githubusercontent.com/SecorD0/utils/main/installers/docker.sh)
+
+
+install 'rust' with one command
+curl https://sh.rustup.rs -sSf | sh -s -- -y
+
+
+check 'cargo' version with one command
+source "$HOME/.cargo/env" && \
+echo -e "\n$(cargo --version).\n"
+
+
+install 'nodejs' and 'npm' with one command
+curl -sL https://deb.nodesource.com/setup_16.x | sudo -E bash - && \
+sudo apt-get install nodejs -y && \
+echo -e "\nnodejs > $(node --version).\nnpm  >>> v$(npm --version).\n"
+
+
+create the 'bundlr' directory and move into it with one command
+mkdir $HOME/bundlr; cd $HOME/bundlr
+
+
+clone the 'validator-rust' repository with one command
+git clone \
+--recurse-submodules https://github.com/Bundlr-Network/validator-rust.git
+
+
+generate 'wallet.json' with one command
+cd $HOME/bundlr/validator-rust && \
+cargo run --bin wallet-tool create > wallet.json
+
+
+Be sure to make a backup of the generated wallet along the way:
+$HOME/bundlr/validator-rust/wallet.json
+
+
+display the address in one command
+cd $HOME/bundlr/validator-rust && \
+cargo run --bin wallet-tool show-address \
+--wallet wallet.json | jq ".address" | tr -d '"'
+
+
+We go to the page with the faucet and request tokens for the newly generated wallet. https://bundlr.network/faucet
+
+
+create a variable with a port
+PORT=2109
+
+
+We create a second variable with the address of our wallet (we generated it in the last paragraph).
+create a variable with the address, use your wallet address
+ADDRESS=erj...FjT
+
+
+save our variables
+echo "export BUNDLR_PORT="${PORT}"" >> $HOME/.bash_profile
+echo "export BUNDLR_ADDRESS="${ADDRESS}"" >> $HOME/.bash_profile
+
+
+'.bash_profile' needs to be reloaded for the variables to be loaded
+source $HOME/.bash_profile
+
+
+check the values of variables
+echo -e "\nport >>>> ${BUNDLR_PORT}.\naddress > ${BUNDLR_ADDRESS}.\n"
+
+
+create '.env' with one command without touching anything
+sudo tee <<EOF >/dev/null $HOME/bundlr/validator-rust/.env
+PORT=${BUNDLR_PORT}
+VALIDATOR_KEY=./wallet.json
+BUNDLER_URL=https://testnet1.bundlr.network
+GW_WALLET=./wallet.json
+GW_CONTRACT=RkinCLBlY4L5GZFv8gCFcrygTyd5Xm91CzKlR6qxhKA
+GW_ARWEAVE=https://arweave.testnet1.bundlr.network
+EOF
+
+
+check relevance
+cat $HOME/bundlr/validator-rust/.env
+
+
+raise 'docker-compose' in the background
+cd $HOME/bundlr/validator-rust && \
+docker-compose up -d
+
+
+watch 'docker-compose' logs with one command
+cd $HOME/bundlr/validator-rust && \
+docker-compose logs -f --tail 10
+
+
+Close the logs with Ctrl + C and move on.
+ build 'testnet-cli' with one command
+ cd $HOME/bundlr/validator-rust && \
+npm i -g @bundlr-network/testnet-cli
+
+
+check wallet balance with one command
+cd $HOME/bundlr/validator-rust && \
+testnet-cli balance ${BUNDLR_ADDRESS}
+
+
+join the network with one command, without touching anything
+cd $HOME/bundlr/validator-rust && \
+testnet-cli join RkinCLBlY4L5GZFv8gCFcrygTyd5Xm91CzKlR6qxhKA \
+-w ./wallet.json \
+-u "http://$(wget -qO- eth0.me):${BUNDLR_PORT}" \
+-s 25000000000000
+
+
+Resulting value: mSJWW...MllRo - transaction hash.
+
+Now we check the balance again and observe its complete absence, which once again proves to us that we did everything right.
+
+
+Now we can go to the explorer and find our validator. https://bundlr.network/explorer/Ry2bDGfBIvYtvDPYnf0eg_ijH4A1EDKaaEEecyjbUQ4
+
+
