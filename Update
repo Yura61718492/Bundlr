@@ -1,0 +1,8 @@
+sudo apt update && sudo apt upgrade -y && \
+npm upgrade --global yarn
+
+cd $HOME/bundlr/validator-rust/ && \
+git pull origin master && \
+git submodule update --init --recursive && \
+docker-compose up --build -d && \
+docker-compose logs -f --tail 10
